@@ -1,7 +1,7 @@
 import re
 import time
-from aiohttp import ClientSession # type: ignore
 import asyncio
+from aiohttp import ClientSession # type: ignore
 from termcolor import colored # type: ignore
 
 # Sızıntı patternleri ve açıklamaları
@@ -298,7 +298,6 @@ def inject_payload_in_url(url, payload):
         url_with_payload = url + f"&{payload}=test"
     else:
         url_with_payload = url + f"?{payload}=test"
-    
     url_with_path_payload = url.rstrip('/') + f'/{payload}/'
     return url_with_payload, url_with_path_payload
 
@@ -308,7 +307,6 @@ async def fetch(session, url, headers=None, cookies=None):
         async with session.get(url, headers=headers, cookies=cookies) as response:
             return await response.text()
     except Exception as e:
-        print(f"GET isteği başarısız: {e}")
         return None
 
 # Asenkron POST isteği
@@ -317,7 +315,6 @@ async def post(session, url, data):
         async with session.post(url, data=data) as response:
             return await response.text()
     except Exception as e:
-        print(f"POST isteği başarısız: {e}")
         return None
 
 # Ana program
@@ -327,30 +324,35 @@ async def main():
     try:
         with open(file_name, "r") as file:
             urls = file.readlines()
-
+        
         start_time = time.time()
-
+        
         async with ClientSession() as session:
             for url in urls:
                 url = url.strip()
                 
-                print(colored(f"Tarama yapılan URL: {url}", 'blue'))
-
                 for payload in payloads:
                     # URL'nin sorgu parametrelerine ve yoluna yük ekleme
                     url_with_query, url_with_path = inject_payload_in_url(url, payload)
-                    
+
                     # GET isteği başlık ve çerezlerle
                     headers = {'User-Agent': 'Mozilla/5.0', 'X-Test-Header': payload}
                     cookies = {'session_id': payload}
-
+                    
                     response = await fetch(session, url_with_query, headers=headers, cookies=cookies)
                     if response:
                         for key, pattern in patterns.items():
                             match = re.search(pattern, response)
                             if match:
-                                print(colored(f"[Sızıntı] URL: {url}, Payload: {payload}, Tip: {key}, Veri: {match.group()}", 'red'))
-
+                                print(colored(f"[+] Sömürülen URL: {url}", 'green'))
+                                print(colored(f"[+] Kullanılan Payload: {payload}", 'green'))
+                                print(colored(f"[+] Zafiyet Nerede: {url} üzerindeki 'input' parametresinde", 'green'))
+                                print(colored(f"[+] Manuel Test Adımları:", 'green'))
+                                print(colored(f"  1. Tarayıcınızdan şu URL'yi ziyaret edin: {url}?{payload}=test", 'green'))
+                                print(colored(f"  2. Dönüş response'unu inceleyin.", 'green'))
+                                print(colored(f"[+] Zafiyetin Sebebi: Giriş doğrulaması eksik veya yetersiz.", 'green'))
+                                print(colored(f"[+] Çözüm Önerisi: Giriş verilerini filtreleyin, özel karakterleri sanitize edin ve WAF kullanarak ek güvenlik önlemleri alın.", 'green'))
+                                
                     # Form tabanlı POST isteği ile enjeksiyon
                     data = {'username': payload, 'password': 'test'}
                     response_post = await post(session, url_with_path, data=data)
@@ -358,11 +360,18 @@ async def main():
                         for key, pattern in patterns.items():
                             match = re.search(pattern, response_post)
                             if match:
-                                print(colored(f"[POST Sızıntı] URL: {url}, Payload: {payload}, Tip: {key}, Veri: {match.group()}", 'red'))
-
+                                print(colored(f"[+] Sömürülen URL: {url}", 'green'))
+                                print(colored(f"[+] Kullanılan Payload: {payload}", 'green'))
+                                print(colored(f"[+] Zafiyet Nerede: {url} üzerindeki 'input' parametresinde", 'green'))
+                                print(colored(f"[+] Manuel Test Adımları:", 'green'))
+                                print(colored(f"  1. Tarayıcınızdan şu URL'yi ziyaret edin: {url}/{payload}/", 'green'))
+                                print(colored(f"  2. Dönüş response'unu inceleyin.", 'green'))
+                                print(colored(f"[+] Zafiyetin Sebebi: Giriş doğrulaması eksik veya yetersiz.", 'green'))
+                                print(colored(f"[+] Çözüm Önerisi: Giriş verilerini filtreleyin, özel karakterleri sanitize edin ve WAF kullanarak ek güvenlik önlemleri alın.", 'green'))
+        
         elapsed_time = time.time() - start_time
         print(f"Tarama tamamlandı. Geçen süre: {elapsed_time:.2f} saniye")
-
+    
     except FileNotFoundError:
         print("Dosya bulunamadı.")
     except Exception as e:
